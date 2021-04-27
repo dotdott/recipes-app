@@ -3,7 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import Preload from '../screens/Preload';
 import Home from '../screens/Home';
-import Descriptions from '../screens/Descriptions';
+import { Recipe } from '../screens/Recipe';
 
 const Stack = createStackNavigator();
 
@@ -17,7 +17,7 @@ export default function MainStack() {
         >
             <Stack.Screen name="Preload" component={Preload} />
             <Stack.Screen name="Home" component={Home} />
-            <Stack.Screen name="Descriptions" component={Descriptions} />
+            <Stack.Screen name="Recipe" component={Recipe} />
         </Stack.Navigator>
     )
 }

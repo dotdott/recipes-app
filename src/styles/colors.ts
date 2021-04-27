@@ -1,6 +1,6 @@
 export default {
-    white_beige: '#f2f3d9',
-    border_bottom: '#f05d23',
-    heading: '#161925',
+    white_blue: '#e8eef2',
+    border_bottom: '#197bbd',
+    heading: '#011936',
     text: '#0d0d0d',
 }

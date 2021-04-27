@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { 
+    TouchableOpacity,
+    ActivityIndicator, 
+    FlatList, 
+    View,
+    Keyboard
+} from 'react-native';
 import colors from '../../styles/colors';
+
+import Lottie from 'lottie-react-native';
+import RecipeLoadingGif from '../../assets/recipe_loading.json';
 
 import {
     Container,
     SearchRecipeTouch,
     SearchInput,
     SearchTextButton,
-
-    RecipeWrapper,
-    RecipeTouch,
-
-    RecipeImage, 
-
-    RecipeDetails,
-    RecipeName,
-
-    RecipeDishType,
-    RecipeCalories,
-    BoldText,
 } from './styles';
 
 interface RecipesData {
@@ -33,53 +30,64 @@ interface RecipesData {
     }
 }
 
+import { useNavigation } from '@react-navigation/core';
+import Recipes from '../../components/Recipes';
+
 export default function index() {
     const APP_ID = 'c942fdc4';
     const APP_KEY = 'c921ef44dd2268c4abf5fe46658c51c2';
     
+    const navigation = useNavigation();
+
     const [recipes, setRecipes] = useState<RecipesData[]>([]);
     const [query, setQuery] = useState('chocolate');
+    const [page, setPage] = useState(10);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    const url = `https://api.edamam.com/search?q=${query}&app_id=${APP_ID}&app_key=${APP_KEY}`;
+    const url = `https://api.edamam.com/search?q=${query}&app_id=${APP_ID}&app_key=${APP_KEY}&from=0&to=${page}`;
 
-    const handleSearchQueries = () => {
-        getRecipes();
-    }
-
-    const getRecipes = async () => {
-        setIsLoading(true);
-
+    
+    const getRecipes = async () => {        
         const response = await fetch(url);
         const data = await response.json();
-
+        
+        if(data.hits.length === 0){
+            console.log('No data!!!');
+        }
+        
         setRecipes(data.hits);
         setIsLoading(false);
+        setLoadingMore(false);
     }
 
+    const handleSearchQueries = () => {
+        setIsLoading(true);
+        
+        Keyboard.dismiss();
 
+        setPage(10);
+
+        getRecipes();
+    }
+    
+    function handleSelectedRecipe(recipe: RecipesData){
+        navigation.navigate("Recipe", { recipe })
+    }
+
+    function handleFetchMore(distance: number){
+        if(distance < 1) return;
+
+        setLoadingMore(true);
+        setPage(prevValue => prevValue + 5);
+        getRecipes();
+    }
 
     useEffect(() => {
+        setIsLoading(true);
+
         getRecipes();
     }, []);
-
-
-    const Recipe = recipes.map(({ recipe }, index) => (
-            <RecipeWrapper key={index}>
-                <RecipeTouch>
-                    <RecipeImage source={{uri: recipe.image}} />
-                </RecipeTouch>
-
-                <RecipeDetails>
-                    <RecipeName>{recipe.label}</RecipeName>
-                    <RecipeDishType>{recipe.dishType}</RecipeDishType>
-                    <RecipeCalories>
-                        { Number(recipe.calories).toFixed(2) }  
-                        <BoldText> kg </BoldText>
-                    </RecipeCalories>
-                </RecipeDetails>
-            </RecipeWrapper>
-    ))
 
     return (
         <Container>
@@ -95,16 +103,49 @@ export default function index() {
                     </SearchTextButton>
                 </TouchableOpacity>
             </SearchRecipeTouch>
-            
 
             {isLoading ? (
-                <ActivityIndicator size="large" color={colors.border_bottom} />
+                <View 
+                    style={{ 
+                        flex: 1,
+                        alignItems: 'center',
+                        marginTop: 70
+                    }}
+                >
+                    <Lottie 
+                        source={RecipeLoadingGif}
+                        style={{width: 300, height: 300}}
+                        resizeMode="contain" 
+                        autoSize 
+                        autoPlay 
+                        loop 
+                        />
+                </View>
             ) : (
-                <ScrollView>
-                    {Recipe}
-                </ScrollView>
-            )}
-            
+                <FlatList 
+                    data={recipes}
+                    keyExtractor={(_, index) => String(index)}
+                    renderItem={({ item }) => (
+                        <Recipes 
+                            recipe={item.recipe}
+                            onPress={() => handleSelectedRecipe(item)}
+                        />
+                        )}
+                    showsVerticalScrollIndicator={false}
+                    onEndReachedThreshold={.2}
+                    onEndReached={({ distanceFromEnd }) =>
+                        handleFetchMore(distanceFromEnd)
+                    }
+                    ListFooterComponent={
+                        loadingMore
+                        ? <ActivityIndicator 
+                            size="large" 
+                            color={colors.border_bottom} 
+                        />
+                        : <></>
+                    }
+                    /> 
+            )}            
         </Container>
     )
 }
